@@ -1,0 +1,14 @@
+# Number of interior grid points (excluding boundary, must be a power of 2)
+grid_num: 16
+
+# Depth of the variational ansatz
+ansatz_depth: 4
+
+# Type of boundary condition: 'D', 'N', or 'P'
+boundary_condition: 'P'
+
+# Number of shots per circuit execution
+num_shots: 524288
+
+# Backend type: either 'simulator' or 'hardware'
+backend: hardware
