@@ -10,9 +10,13 @@ In our implementation, boundary conditions are treated using a modular circuit c
 This implementation is based on the following publications:
 
 > **Yuki Sato, Ruho Kondo, Satoshi Koide, Hideki Takamatsu, Nobuyuki Imoto** (2021). *Variational quantum algorithm based on the minimum potential energy for solving the Poisson equation*.
+> 
 > **Byeongyong Park, Doyeol Ahn .** (2023). *Reducing CNOT count in quantum Fourier transform for the linear nearest-neighbor architecture*.
+> 
 > **Minjin Choi, Hoon Ryu .** (2024). *A variational quantum algorithm for tackling multi-dimensional Poisson equations with inhomogeneous boundary conditions*.
+> 
 > **Xiaoqi Liu, Yuedi Qu, Ming Li, Shu-Qian Shen .** (2025). *A variational quantum algorithm for the Poisson equation based on the banded Toeplitz systems*.
+> 
 > **Dongyun Chung, Jiyong Choi, Jung-Il Choi .** (2025). *Efficient and Scalable Quantum Library Solving Two-Dimensional Poisson Equations with Mixed Boundary Conditions*.
 ---
 
