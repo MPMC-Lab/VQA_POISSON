@@ -45,13 +45,13 @@ This implementation is based on the following publications:
   - `InnerProductProcessor` for evaluating inner products in variational energy formulations.
  
 - `lib/quantum_functions.py` : qiskit-based functions to implement QFT LNN (Park et al.) and linear ansatze
-- `lib/classical_functions.py` : NumPy-based emulations of quantum state preparatios and gate applications (mainly used for validation in ```validation_.py```)
+- `lib/classical_functions.py` : NumPy-based emulations of quantum state preparatios and gate applications (mainly used for validation in `validation_.py`)
 - `validation.ipynb` : Jupyter notebook to verify whether our expectations and quantum simulations align.
 - `example_1D.ipynb` : Jupyter notebook to demonstrate a simple example of VQA_POISSON optimization in 1D.
 
 - `main_1D.py` : Main Python code for 1D optimization.
-- `source_function_input.py` : User-defined source function to input in main_1D.py
-- `config.yaml` : Problem configuration used in main_1D. Includes:
+- `source_function_input.py` : User-defined source function to input in `main_1D.py`
+- `config.yaml` : Problem configuration used in `main_1D.py`. Includes:
   - grid_num : Total number of unknowns (Excluding the boundary nodes, must be a power of 2)
   - ansatz_depth : Depth of ansatz (Only used when the default LNN ansatz is used)
   - boundary_condition : Type of boundary condition, either 'D', 'N', or 'P'
@@ -92,7 +92,7 @@ python main_1D.py
 
 Make sure your API key are set properly either for IonQ simulators or IBM hardwares.
 
-You can modify problem settings (grid size, ansatz depth, backend, etc.) via config.yaml
+You can modify problem settings (grid size, ansatz depth, backend, etc.) via `config.yaml`.
 
 ---
 
