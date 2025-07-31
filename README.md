@@ -38,7 +38,7 @@ This implementation is based on the following publications:
 - `lib/QuantumCalculator.py` :  
   Problem-specific processors that inherit from `QuantumComputer`, implementing:
   - `LaplacianEVProcessor1D` for computing Laplacian expectation values under Dirichlet, Neumann, or Periodic boundary conditions;
-  - `InnerProductProcessor` for evaluating numerator overlaps in variational energy formulations.
+  - `InnerProductProcessor` for evaluating inner products in variational energy formulations.
  
 - `lib/quantum_functions.py` : qiskit-based functions to implement QFT LNN (Park et al.) and linear ansatze
 - `lib/classical_functions.py` : NumPy-based emulations of quantum state preparatios and gate applications (mainly used for validation in validation_.py)
