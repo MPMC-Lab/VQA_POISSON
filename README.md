@@ -82,7 +82,7 @@ git clone https://github.com/MPMC-Lab/VQA_POISSON.git
 ### Run Instructions
 
 This repository is structured to run the 1D Poisson solver via a single command.
-Please make sure the dependencies are installed and config.yaml is properly set.
+Please make sure the dependencies are installed and `config.yaml` is properly set.
 
 To execute the main script:
 
