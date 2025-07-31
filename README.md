@@ -45,7 +45,7 @@ This implementation is based on the following publications:
   - `InnerProductProcessor` for evaluating inner products in variational energy formulations.
  
 - `lib/quantum_functions.py` : qiskit-based functions to implement QFT LNN (Park et al.) and linear ansatze
-- `lib/classical_functions.py` : NumPy-based emulations of quantum state preparatios and gate applications (mainly used for validation in validation_.py)
+- `lib/classical_functions.py` : NumPy-based emulations of quantum state preparatios and gate applications (mainly used for validation in ```validation_.py```)
 - `validation.ipynb` : Jupyter notebook to verify whether our expectations and quantum simulations align.
 - `example_1D.ipynb` : Jupyter notebook to demonstrate a simple example of VQA_POISSON optimization in 1D.
 
