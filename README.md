@@ -4,7 +4,7 @@ VQA_POISSON is a hybrid quantum-classical solver designed to compute the solutio
 
 In our implementation, boundary conditions are treated using a modular circuit construction:
 - The cost functional follows the structure introduced by *Sato et al. (2021)*, using a Rayleigh quotient-type expression for variational minimization.
-- **Dirichlet** and **Neumann** conditions are implemented based on the variational formulations proposed by *Choi & Ryu (2024)*.
+- **Robin** boundary conditions are implemented based on the variational formulations proposed by *Choi & Ryu (2024)*.
 - **Periodic** boundary conditions leverage *QFT-based methods* inspired by *Park & Ahn (2023)* and *Liu et al. (2025)*.
 
 This implementation is based on the following publications:
@@ -24,7 +24,7 @@ This implementation is based on the following publications:
 
 - Hybrid VQA framework for solving PDEs
 - Cost function based on discretized energy functional
-- Support for 1D/2D domains with Dirichlet / Neumann / Periodic boundary conditions
+- Support for 1D/2D domains with Periodic / Robin boundary conditions
 
 ---
 
@@ -41,7 +41,7 @@ This implementation is based on the following publications:
 
 - `lib/QuantumCalculator.py` :  
   Problem-specific processors that inherit from `QuantumComputer`, implementing:
-  - `LaplacianEVProcessor1D` for computing Laplacian expectation values under Dirichlet, Neumann, or Periodic boundary conditions;
+  - `LaplacianEVProcessor1D` for computing Laplacian expectation values under Robin or Periodic boundary conditions;
   - `InnerProductProcessor` for evaluating inner products in variational energy formulations.
  
 - `lib/quantum_functions.py` : qiskit-based functions to implement QFT LNN (Park et al.) and linear ansatze
@@ -50,11 +50,13 @@ This implementation is based on the following publications:
 - `example_1D.ipynb` : Jupyter notebook to demonstrate a simple example of VQA_POISSON optimization in 1D.
 
 - `main_1D.py` : Main Python code for 1D optimization.
-- `source_function_input.py` : User-defined source function to input in `main_1D.py`
-- `config.yaml` : Problem configuration used in `main_1D.py`. Includes:
+- `source_function_input.py` : User-defined source function to input in main_1D.py
+- `config.yaml` : Problem configuration used in main_1D. Includes:
   - grid_num : Total number of unknowns (Excluding the boundary nodes, must be a power of 2)
   - ansatz_depth : Depth of ansatz (Only used when the default LNN ansatz is used)
-  - boundary_condition : Type of boundary condition, either 'D', 'N', or 'P'
+  - boundary_condition : Type of boundary condition, either 'R' or 'P'
+  - `x0, x1` : End points of the 1D domain
+  - `alpha`, `beta`, `gamma_1`, `gamma_2` : Constants used for Robin problems
   - num_shots : number of shots per each circuit execution
   - backend : hardware or simulator
 ---
