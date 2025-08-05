@@ -13,7 +13,7 @@ This implementation is based on the following publications:
 
 > **Byeongyong Park, Doyeol Ahn .** (2023). *Reducing CNOT count in quantum Fourier transform for the linear nearest-neighbor architecture*.
 
-> **Minjin Choi, Hoon Ryu .** (2024). *A variational quantum algorithm for tackling multi-dimensional Poisson equations with inhomogeneous boundary conditions*.
+> **Minjin Choi, Hoon Ryu .** (2025). *A variational quantum algorithm for tackling multi-dimensional Poisson equations with inhomogeneous boundary conditions*.
 
 > **Xiaoqi Liu, Yuedi Qu, Ming Li, Shu-Qian Shen .** (2025). *A variational quantum algorithm for the Poisson equation based on the banded Toeplitz systems*.
 
