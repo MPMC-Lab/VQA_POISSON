@@ -20,7 +20,7 @@ mpl.rcParams['text.latex.preamble'] = r'\usepackage{amsmath}'
 # Load Configuration
 # ================================
 print("Loading configuration from config.yaml...")
-with open("config.yaml", "r") as file:
+with open("usr/config.yaml", "r") as file:
     config = yaml.safe_load(file)
 
 x0 = config["x0"]
@@ -82,7 +82,7 @@ print("Parameterized circuit constructed.")
 print(f"  - Number of qubits: {num_qubits}")
 print(f"  - Number of parameters: {param_num}")
 
-f_vector = np.loadtxt("rhs.csv", delimiter=",")
+f_vector = np.loadtxt("usr/rhs.csv", delimiter=",")
 f_vector = f_vector * dx * dx
 
 if boundary_condition == 'R':
@@ -156,7 +156,7 @@ optimizer = VQA_PoissonOptimizer1D(
             laplacian_processor = laplacian_processor,
             numerator_processor = numerator_processor)
 
-initial_params = np.loadtxt("initial_params.csv", delimiter=",")
+initial_params = np.loadtxt("usr/initial_params.csv", delimiter=",")
 
 result = optimizer.optimize(
             initial_params = initial_params,
@@ -176,3 +176,4 @@ np.savetxt("VQA_optimal_amplitudes.csv", amplitudes, delimiter=",")
 with open("VQA_result.txt", "w") as f:
 
     print(result, file=f)
+
