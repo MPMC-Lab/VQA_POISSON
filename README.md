@@ -45,18 +45,19 @@ This implementation is based on the following publications:
   - `InnerProductProcessor` for evaluating inner products in variational energy formulations.
  
 - `lib/quantum_functions.py` : qiskit-based functions to implement QFT LNN (Park et al.) and linear ansatze
-- `lib/classical_functions.py` : NumPy-based emulations of quantum state preparatios and gate applications (mainly used for validation in `validation_.py`)
-- `validation.ipynb` : Jupyter notebook to verify whether our expectations and quantum simulations align.
+- `lib/classical_functions.py` : NumPy-based emulations of quantum state preparations and gate applications
 - `example_1D.ipynb` : Jupyter notebook to demonstrate a simple example of VQA_POISSON optimization in 1D.
 
 - `main_1D.py` : Main Python code for 1D optimization.
-- `source_function_input.py` : User-defined source function to input in main_1D.py
-- `config.yaml` : Problem configuration used in main_1D. Includes:
+
+- `usr/rhs.csv` : User-defined RHS array to input in main_1D.py. Make sure grid_num is equal to the size of this array.
+- `usr/initial_params.csv` : User-defined initial parameters for optimization. Make sure this is equal to the size of the number of parameters printed on the terminal.
+- `usr/config.yaml` : Problem configuration used in main_1D. Includes:
   - grid_num : Total number of unknowns (Excluding the boundary nodes, must be a power of 2)
   - ansatz_depth : Depth of ansatz (Only used when the default LNN ansatz is used)
   - boundary_condition : Type of boundary condition, either 'R' or 'P'
   - `x0, x1` : End points of the 1D domain
-  - `alpha`, `beta`, `gamma_1`, `gamma_2` : Constants used for Robin problems
+  - `alpha`, `beta`, `gamma`: Constants used for Robin problems
   - num_shots : number of shots per each circuit execution
   - backend : hardware or simulator
 ---
