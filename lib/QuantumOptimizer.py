@@ -1,4 +1,5 @@
-from qiskit import QuantumCircuit
+from qiskit import QuantumCircuit, transpile
+from qiskit.circuit import ClassicalRegister
 from typing import List, Union, Optional
 import numpy as np
 from scipy.optimize import minimize
@@ -18,22 +19,16 @@ class VQA_PoissonOptimizer1D:
     def __init__(
         self,
         laplacian_processor: LaplacianEVProcessor1D,
-        numerator_processor: InnerProductProcessor,
-        dx : float,
-        ansatz: QuantumCircuit
+        numerator_processor: InnerProductProcessor
     ):
         
         self.laplacian_processor = laplacian_processor
         self.numerator_processor = numerator_processor
-        self.dx = dx
-        self.ansatz = ansatz
-    
         
     def cost_function(
         self,
         params: np.ndarray,
         optimization_level: int,
-        epsilon : float = 0.001,
         is_simulator = True
     ) -> float:
         """
@@ -42,7 +37,7 @@ class VQA_PoissonOptimizer1D:
         Args:
             params: Parameters for the ansatz circuit.
             optimization_level: Transpiler optimization level.
-            epsilon: Stability constant (only for 'P' and 'N' BCs).
+            epsilon: Stability constant, not used for 'D' (homogeneous Dirichlet boundaries).
             is_simulator: Whether to run on simulator or hardware.
 
         Returns:
@@ -55,11 +50,9 @@ class VQA_PoissonOptimizer1D:
         else:
             counts = self.laplacian_processor.hardware_execute(transpiled)
         
-        denom = self.laplacian_processor.make_evs(counts)[0] / ((self.dx) ** 2)
-        
         bc = self.laplacian_processor.boundary_condition_list[0]
-        if bc == 'P' or bc == 'N':
-            denom = denom + epsilon
+        
+        denom = self.laplacian_processor.make_evs(counts)[0]
         
         num_circuit = self.numerator_processor.make_circuits()
         transpiled = self.numerator_processor.transpile(num_circuit, params_list = [params], optimization_level = optimization_level)
@@ -69,17 +62,40 @@ class VQA_PoissonOptimizer1D:
             counts = self.numerator_processor.hardware_execute(transpiled)
 
         num = self.numerator_processor.make_evs(counts)[0]
-        
+        # print(f"params: {params}")
+        # print(f"Quantum num: {num}")
+        # print(f"Quantum denom: {denom}")
         qevs = (num / denom) * 0.5
+        
+        # dx = (1 / 17)
+        # A = laplacian_matrix(16, "Robin", alpha = 1.0, beta = -1.0, dx = 1 / (16 + 1)) #/ (dx * dx)
+        # psi = make_classical_psi(4, 4, params = params)
+        # denom = psi @ A @ psi
+        # f_vector = np.ones(16) * (-2.0)
+        
+        # alpha = 1.0
+        # beta = -1.0
+        # gamma = 0.0
+        
+        # f_vector[0] = f_vector[0] - (gamma / (alpha - (beta / dx)))
+        # f_vector[-1] = f_vector[-1] - (gamma / (alpha - (beta / dx)))
+        
+        # f_normalized = f_vector / np.linalg.norm(f_vector)
+        # num = np.inner(psi, f_normalized)
+        # print(f"Classical num: {num**2}")
+        # print(f"Classical denom: {denom}")
+        # cevs = num**2 / denom
+        # cevs = 0.5 * cevs
+        # print(f"CEVS: {cevs}")
+        # print(f"QEVS: {qevs}")
+        
         return qevs
     
     def optimize(
         self,
         initial_params: np.ndarray,
         method: str = "COBYLA",
-        epsilon: float = 0.001,
         optimization_level: int = 1,
-        is_simulator: bool = True,
         options = None,
         callback = None
     ):
@@ -91,7 +107,6 @@ class VQA_PoissonOptimizer1D:
             method: Optimization method (default 'COBYLA').
             epsilon: Stability constant for Neumann/Periodic.
             optimization_level: Qiskit transpile optimization level.
-            is_simulator: Flag to select simulator/hardware.
             options: Dictionary of optimizer-specific options.
 
         Returns:
@@ -99,9 +114,8 @@ class VQA_PoissonOptimizer1D:
         """
         
         cost_fn = partial(self.cost_function, 
-                          optimization_level=optimization_level, 
-                          epsilon = epsilon, 
-                          is_simulator=is_simulator)
+                          optimization_level=optimization_level,
+                          is_simulator=self.laplacian_processor.is_simulator)
         
         result = minimize(cost_fn, 
                           initial_params, 
@@ -110,3 +124,54 @@ class VQA_PoissonOptimizer1D:
                           callback = callback)
         
         return result
+    
+    def get_amplitudes(
+        self,
+        optimal_params: np.ndarray,
+        optimization_level: int = 1,
+    ) -> np.ndarray:
+        
+        """
+        Executes the optimized ansatz circuit and extracts amplitude information
+        from quantum measurement results.
+
+        Args:
+            optimal_params: The optimal parameters obtained after optimization.
+            optimization_level: Transpiler optimization level to control circuit compilation.
+
+        Returns:
+            np.ndarray: A 1D array of square-rooted normalized measurement counts,
+                        corresponding to the amplitudes of each computational basis state.
+                        Bit-reversal is applied by default for qubit order correction.
+        """
+        
+        num_qubits = self.laplacian_processor.num_qubits_list[0]
+        grid_num = 2**num_qubits
+        ansatz_gate = self.laplacian_processor.ansatz_list[0].to_gate()
+        
+        qc = QuantumCircuit(num_qubits)
+        qc.append(ansatz_gate, qc.qubits)
+        c = ClassicalRegister(num_qubits, 'my_creg')
+        qc.add_register(c)
+        
+        qc.measure([i for i in range (num_qubits)], c)
+    
+        parameters = qc.parameters
+        
+        backend = self.laplacian_processor.backend
+        
+        qc_transpiled = transpile(qc, backend = backend, optimization_level = optimization_level)
+        qc_transpiled = qc_transpiled.assign_parameters({parameters[i]: optimal_params[i] for i in range (len(parameters))})
+        
+        if self.laplacian_processor.is_simulator:
+            counts = backend.run(qc_transpiled, shots = self.laplacian_processor.num_shots).get_counts()
+        else:
+            sampler = self.laplacian_processor.sampler
+            job = sampler.run([qc_transpiled])
+            print(f"  - Extracting amplitues of ansatz..")
+            print(f"  - Job ID: {job.job_id()}")
+            
+            result = job.result()[0]
+            counts = result.data.my_creg.get_counts()
+        
+        return count_list(counts, grid_num, self.laplacian_processor.num_shots, num_qubits, reverse = False)

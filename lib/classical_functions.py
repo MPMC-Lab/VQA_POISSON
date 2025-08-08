@@ -16,14 +16,14 @@ classical_CNOT = np.array([[1,0,0,0],
                           [0,0,0,1],
                           [0,0,1,0]], dtype=complex)
 
-def laplacian_matrix(n, boundary_condition):
+def laplacian_matrix(n, boundary_condition, alpha = 0.0, beta = 0.0, dx = 0.0):
     
     """
     Construct a finite-difference Laplacian matrix with specified boundary condition.
 
     Args:
         n: Size of the matrix (number of grid points).
-        boundary_condition: 'Neumann' or 'Periodic'
+        boundary_condition: "P" or "R"
 
     Returns:
         L: (n x n) NumPy array representing Laplacian matrix
@@ -36,12 +36,13 @@ def laplacian_matrix(n, boundary_condition):
         L[i + 1, i] = 1
     for i in range(n - 1):
         L[i, i+1] = 1
-    if boundary_condition == "Neumann":
-        L[0,0] = -1
-        L[n-1, n-1] = -1
-    elif boundary_condition == "Periodic":        
+    if boundary_condition == "P":        
         L[n - 1, 0] = 1
         L[0, n - 1] = 1
+    elif boundary_condition == "R":
+        if beta != 0.0:
+            L[0,0] += (beta / dx) / ((beta / dx) - alpha)
+            L[n - 1, n - 1] += (beta / dx) / ((beta / dx) - alpha)
     return L
 
 def CNOT_matrix(num_qubits, control_index):
@@ -143,12 +144,82 @@ def make_classical_psi(num_qubits, ansatz_depth, params):
             psi = CNOT_matrix(num_qubits, qubit) @ psi
     return bit_reverse_statevector(psi, num_qubits)
 
-def classical_cost_function_1D(num_qubits, ansatz_depth, params, f_normalized, dx, boundary_condition):
+def bit_reversal(n, num_bits):
+    """
+    Performs bit reversal on the integer `n` with `num_bits` total bits.
+    For example, if n=6 (110) and num_bits=3, the result is 3 (011).
+    """
+    return int(bin(n)[2:].zfill(num_bits)[::-1], 2)
+
+def count_list(counts, array_size, num_shots, num_qubits, reverse = True):
     
-    cpsi = make_classical_psi(num_qubits, ansatz_depth, params)
-    num = np.inner(cpsi, f_normalized)**2
-    A = laplacian_matrix(f_normalized.size, boundary_condition)
-    denom = cpsi @ A @ cpsi
-    denom = denom / (dx**2)
+    """
+    Converts a Qiskit-style `counts` dictionary (e.g., {'001': 10, '010': 12, ...})
+    into a normalized numpy array of square-rooted probabilities.
+
+    Parameters:
+    -----------
+    counts : dict
+        Dictionary of bitstrings (str) → counts (int) from measurement results.
+
+    array_size : int
+        Size of the output array. Typically 2^n for n qubits.
+
+    num_shots : int
+        Total number of measurement shots used in the experiment.
+
+    num_qubits : int
+        Number of qubits used in the circuit. Used for bit reversal.
+
+    reverse : bool (default=True)
+        Whether to apply bit reversal on indices (useful if qubit order is reversed).
+
+    Returns:
+    --------
+    count_list : np.ndarray
+        A 1D array of size `array_size`, with each entry containing
+        sqrt(probability) for the corresponding basis state (after optional bit reversal).
+    """
     
-    return (num / denom) * 0.5
+    count_list = np.zeros(array_size)
+    if reverse == True:
+        for string, count in counts.items():
+            # Convert the binary string to an integer
+            index = int(string, 2)
+            
+            # Perform bit reversal
+            bit_reversed_index = bit_reversal(index, num_qubits)
+            
+            # Update the count list
+            count_list[bit_reversed_index] = np.sqrt(count / num_shots)
+        
+        return count_list
+    else:
+        for string, count in counts.items():
+            # Convert the binary string to an integer
+            index = int(string, 2)
+            # Update the count list
+            count_list[index] = np.sqrt(count / num_shots)
+        return count_list
+    
+def check_stability(A, num_shots, C = 10.0):
+    """
+    Assess the numerical stability of a matrix A under sampling-based quantum optimization.
+    If the smallest absolute eigenvalue is below a threshold determined by C / sqrt(num_shots),
+    a warning is issued indicating potential instability due to sampling noise.
+    """
+
+    eigenvalues = np.linalg.eigvalsh(A)
+    lambda_min = np.min(np.abs(eigenvalues))
+
+    threshold = C / np.sqrt(num_shots)
+
+    if lambda_min < threshold:
+        print(f"[Warning] The system matrix may be ill-conditioned for sampling-based optimization.")
+        print(f"          Minimum |<ψ|A|ψ>| = {lambda_min:.3e} < {threshold:.3e} = (C / sqrt({num_shots}))")
+        print(f"          This may lead to instability or unreliable convergence due to sampling noise. Check your boundary conditions or increase the number of shots.\n")
+        return True
+    
+    else:
+        print(f"  - Matrix is well-conditioned. Minimum |<ψ|A|ψ>| = {lambda_min:.3e}\n")
+        return False
