@@ -62,33 +62,7 @@ class VQA_PoissonOptimizer1D:
             counts = self.numerator_processor.hardware_execute(transpiled)
 
         num = self.numerator_processor.make_evs(counts)[0]
-        # print(f"params: {params}")
-        # print(f"Quantum num: {num}")
-        # print(f"Quantum denom: {denom}")
         qevs = (num / denom) * 0.5
-        
-        # dx = (1 / 17)
-        # A = laplacian_matrix(16, "Robin", alpha = 1.0, beta = -1.0, dx = 1 / (16 + 1)) #/ (dx * dx)
-        # psi = make_classical_psi(4, 4, params = params)
-        # denom = psi @ A @ psi
-        # f_vector = np.ones(16) * (-2.0)
-        
-        # alpha = 1.0
-        # beta = -1.0
-        # gamma = 0.0
-        
-        # f_vector[0] = f_vector[0] - (gamma / (alpha - (beta / dx)))
-        # f_vector[-1] = f_vector[-1] - (gamma / (alpha - (beta / dx)))
-        
-        # f_normalized = f_vector / np.linalg.norm(f_vector)
-        # num = np.inner(psi, f_normalized)
-        # print(f"Classical num: {num**2}")
-        # print(f"Classical denom: {denom}")
-        # cevs = num**2 / denom
-        # cevs = 0.5 * cevs
-        # print(f"CEVS: {cevs}")
-        # print(f"QEVS: {qevs}")
-        
         return qevs
     
     def optimize(
@@ -174,4 +148,5 @@ class VQA_PoissonOptimizer1D:
             result = job.result()[0]
             counts = result.data.my_creg.get_counts()
         
+
         return count_list(counts, grid_num, self.laplacian_processor.num_shots, num_qubits, reverse = False)
