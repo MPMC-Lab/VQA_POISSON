@@ -170,11 +170,10 @@ print("Optimization complete.")
 # ================================
 amplitudes = optimizer.get_amplitudes(optimal_params = result.x)
 
-np.savetxt("VQA_optimal_parameters.csv", result.x, delimiter=",")
-np.savetxt("VQA_optimal_amplitudes.csv", amplitudes, delimiter=",")
+os.makedirs("output_1D", exist_ok=True)
+np.savetxt("output_1D/VQA_optimal_parameters.csv", result.x, delimiter=",")
+np.savetxt("output_1D/VQA_optimal_amplitudes.csv", amplitudes, delimiter=",")
 
-with open("VQA_result.txt", "w") as f:
-
+with open("output_1D/VQA_result.txt", "w") as f:
     print(result, file=f)
-
 
