@@ -38,12 +38,13 @@ This implementation is based on the following publications:
   - transpilation for hardware/simulator execution,
   - unified interfaces for building and evaluating quantum expectation values.  
   Serves as a base class to be subclassed for specific physical problems (e.g., Laplacian, inner product).
-
 - `lib/QuantumCalculator.py` :  
   Problem-specific processors that inherit from `QuantumComputer`, implementing:
-  - `LaplacianEVProcessor1D` for computing Laplacian expectation values under Robin or Periodic boundary conditions;
+  - `LaplacianEVProcessor` for computing Laplacian expectation values under Robin or Periodic boundary conditions;
   - `InnerProductProcessor` for evaluating inner products in variational energy formulations.
- 
+- `lib/QuantumOptimizer.py` : 
+  Classical optimization engine for VQA, minimizing problem-specific cost functions (e.g., Rayleigh quotient) using results from `QuantumCalculator` processors.
+  
 - `lib/quantum_functions.py` : qiskit-based functions to implement QFT LNN (Park et al.) and linear ansatze
 - `lib/classical_functions.py` : NumPy-based emulations of quantum state preparations and gate applications
 - `example_1D.ipynb` : Jupyter notebook to demonstrate a simple example of VQA_POISSON optimization in 1D.
