@@ -50,9 +50,9 @@ This implementation is based on the following publications:
 
 - `main_1D.py` : Main Python code for 1D optimization.
 
-- `usr/rhs.csv` : User-defined RHS array to input in main_1D.py. Make sure grid_num is equal to the size of this array.
-- `usr/initial_params.csv` : User-defined initial parameters for optimization. Make sure this is equal to the size of the number of parameters printed on the terminal.
-- `usr/config.yaml` : Problem configuration used in main_1D. Includes:
+- `input/rhs.csv` : User-defined RHS array to input in main_1D.py. Make sure grid_num is equal to the size of this array.
+- `input/initial_params.csv` : User-defined initial parameters for optimization. Make sure this is equal to the size of the number of parameters printed on the terminal.
+- `input/config.yaml` : Problem configuration used in main_1D. Includes:
   - grid_num : Total number of unknowns (Excluding the boundary nodes, must be a power of 2)
   - ansatz_depth : Depth of ansatz (Only used when the default LNN ansatz is used)
   - boundary_condition : Type of boundary condition, either 'R' or 'P'
@@ -60,6 +60,8 @@ This implementation is based on the following publications:
   - `alpha`, `beta`, `gamma`: Constants used for Robin problems
   - num_shots : number of shots per each circuit execution
   - backend : hardware or simulator
+
+- `output` : Output of VQA optimization (Optimal parameters, amplitudes, etc.)
 ---
 
 ## Installation & Requirements
