@@ -39,6 +39,7 @@ method = config["method"]
 print("Initializing backends...")
 if backend == 'simulator':
     # IonQ Simulator
+    # os.environ['IONQ_API_KEY'] = 'Your API Key'
     provider = IonQProvider(os.getenv("IONQ_API_KEY"))
     simulator_backend = provider.get_backend("ionq_simulator", gateset = 'native')
     simulator_backend.set_options(noise_model="ideal")
@@ -176,4 +177,9 @@ np.savetxt("output_1D/VQA_optimal_amplitudes.csv", amplitudes, delimiter=",")
 
 with open("output_1D/VQA_result.txt", "w") as f:
     print(result, file=f)
+    
 
+print("Results saved to:")
+print("  - output_1D/VQA_optimal_parameters.csv")
+print("  - output_1D/VQA_optimal_amplitudes.csv")
+print("  - output_1D/VQA_result.txt")
