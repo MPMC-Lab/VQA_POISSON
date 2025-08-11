@@ -74,7 +74,7 @@ class LaplacianEVProcessor1D(QuantumComputer):
         for each ansatz under specified boundary conditions.
         
         P: Periodic condition (from Liu et al. (2025))
-        R: Robin condition
+        R: Robin condition (from Choi et al. (2025))
 
         Returns:
             circuits: List of quantum circuits for all EV evaluations
@@ -243,3 +243,394 @@ class InnerProductProcessor(QuantumComputer):
             qevs_list.append(qevs)
                 
         return qevs_list
+    
+    
+class LaplacianEVProcessor2D(QuantumComputer):
+    def __init__(self,
+                 ansatz_list: List[QuantumCircuit],
+                 x_qubit_counts_list: List[int],
+                 boundary_condition_list: List[str],
+                 dx_list: List[float],
+                 dy_list: List[float],
+                 backend: Union[Backend, BackendV2],
+                 num_shots: int,
+                 is_simulator: bool,
+                 sampler: Optional[SamplerV2] = None,
+                 alpha_x: Optional[float] = 0.0,
+                 alpha_y: Optional[float] = 0.0,
+                 beta_x: Optional[float] = 0.0,
+                 beta_y: Optional[float] = 0.0
+    ):
+        """
+        Abstract base class for computing Laplacian expectation values.
+
+        Args:
+            ansatz_list: List of parameterized ansatz (QuantumCircuit)
+            x_qubit_counts_list: List of qubit numbers for x-direction (Ex. if x,y = 16x32, then grid_num = 512 and x_qubit_counts = 4)
+            boundary_condition_list: List of boundary conditions for each evs (Either a combination of 'P' and 'R', ex. 'PR'. Make sure it matches the order (x,y))
+            dx_list: List of grid sizes along the x direction of the discretized domains.
+            dy_list: List of grid sizes along the y direction of the discretized domains.
+            backend: Qiskit backend for simulation or hardware.
+            num_shots: Number of shots per circuit execution.
+            is_simulator: Flag indicating whether the backend is a simulator.
+            sampler: Sampler object (only used for IBM hardware).
+            
+            alpha, beta, gamma_1, gamma_2 : Constants used for Robin boundary conditions (R) :
+            \alpha U_0 + \beta \frac{\partial U_0}{\partial n} = \gamma_1
+            \alpha U_N - \beta \frac{\partial U_N}{\partial n} = \gamma_2
+        """
+        num_qubits_list = []
+        for ansatz in ansatz_list:
+            num_qubits_list.append(ansatz.num_qubits)
+            
+        self.num_qubits_list = num_qubits_list
+        self.x_qubit_counts_list = x_qubit_counts_list
+        self.boundary_condition_list = boundary_condition_list
+        self.dx_list = dx_list
+        self.dy_list = dy_list
+        
+        self.alpha_x = alpha_x
+        self.alpha_y = alpha_y
+        self.beta_x = beta_x
+        self.beta_y = beta_y
+        
+        # Determine how many circuits are needed per EV depending on BC type:.
+        num_circuits_per_evs = []
+        for bc, num_qubits, x_qubit_counts in zip(boundary_condition_list, num_qubits_list, x_qubit_counts_list):
+            if (bc == 'PR') and (self.beta_y != 0):
+                y_qubit_counts = num_qubits - x_qubit_counts
+                # One for periodic, y_qubit_count + 1 for Robin
+                num_circuits_per_evs.append(y_qubit_counts + 2)
+                
+            elif (bc == 'PR') and (self.beta_y == 0):
+                y_qubit_counts = num_qubits - x_qubit_counts
+                num_circuits_per_evs.append(y_qubit_counts + 1)
+                
+            elif (bc == 'RP') and (self.beta_x != 0):
+                num_circuits_per_evs.append(x_qubit_counts + 2)
+                
+            elif (bc == 'RP') and (self.beta_x == 0):
+                num_circuits_per_evs.append(x_qubit_counts + 1)
+            
+            elif (bc == 'PP'):
+                num_circuits_per_evs.append(2)
+                
+            elif (bc == 'RR'):
+                temp = num_qubits
+                if self.beta_x != 0:
+                    temp += 1
+                if self.beta_y != 0:
+                    temp += 1
+                num_circuits_per_evs.append(temp)
+            
+        super().__init__(
+            num_evs = len(boundary_condition_list),
+            num_circuits_per_evs = num_circuits_per_evs,
+            ansatz_list = ansatz_list,
+            backend = backend,
+            num_shots = num_shots,
+            is_simulator = is_simulator,
+            sampler = sampler,
+        )
+        
+
+    def make_circuits(self) -> List[QuantumCircuit]:
+        """
+        Build quantum circuits to measure Laplacian expectation values
+        for each ansatz under specified boundary conditions.
+        
+        P: Periodic condition (from Liu et al. (2025))
+        R: Robin condition (from Choi et al. (2025))
+
+        Returns:
+            circuits: List of quantum circuits for all EV evaluations
+        """
+        
+        ansatz_gate_list = [self.ansatz_list[i].to_gate() for i in range (self.num_evs)]
+        circuits = []
+        
+        for circuit_idx in range (self.num_evs):
+            ansatz_gate = ansatz_gate_list[circuit_idx]
+            num_qubits = self.num_qubits_list[circuit_idx]
+            x_qubit_counts = self.x_qubit_counts_list[circuit_idx]
+            y_qubit_counts = int(num_qubits - x_qubit_counts)
+            
+            # Robin in x direction & Periodic in y direction
+            if self.boundary_condition_list[circuit_idx] == "RP":
+                
+                for j in range (x_qubit_counts):
+                    qc = QuantumCircuit(num_qubits)
+                    c = ClassicalRegister(x_qubit_counts - j, 'my_creg')
+                    qc.add_register(c)
+                    qc.append(ansatz_gate, qc.qubits)
+                    
+                    for i in range (x_qubit_counts - 1 - j):
+                        qc.cx(i + 1, i)
+                        
+                    qc.h(x_qubit_counts - 1 - j)
+                    qc.measure([(index) for index in range (x_qubit_counts - j)], c)
+                    circuits.append(qc)
+                
+                if self.beta_x != 0.0:
+                    c = ClassicalRegister(x_qubit_counts, 'my_creg')
+                    qc = QuantumCircuit(num_qubits)
+                    qc.add_register(c)
+                    qc.append(ansatz_gate, qc.qubits)
+                    qc.measure([i for i in range (x_qubit_counts)], c)
+                    circuits.append(qc)
+                    
+                # Periodic in y direction
+                qc = QuantumCircuit(num_qubits + 1)
+                c = ClassicalRegister(1, "my_creg")
+                qc.add_register(c)
+                
+                qc.append(ansatz_gate, qc.qubits[1:])
+                qc = QFT_LNN(qc, y_qubit_counts, 1 + x_qubit_counts)
+                qc.h(0)
+                
+                for idx in range(y_qubit_counts):
+                    qc.cp((2 * np.pi / (2**y_qubit_counts)) * (2**idx), 0, num_qubits - idx)
+                
+                qc.h(0)
+                
+                qc.measure([0], c)
+                circuits.append(qc)
+            
+            # Robin in y direction & Periodic in x direction
+            elif self.boundary_condition_list[circuit_idx] == "PR":
+                
+                for j in range (y_qubit_counts):
+                    qc = QuantumCircuit(num_qubits)
+                    c = ClassicalRegister(y_qubit_counts - j, 'my_creg')
+                    qc.add_register(c)
+                    qc.append(ansatz_gate, qc.qubits)
+                    
+                    for i in range (y_qubit_counts - 1 - j):
+                        qc.cx(i + 1 + x_qubit_counts, i + x_qubit_counts)
+                        
+                    qc.h(num_qubits - 1 - j)
+                    qc.measure([(index + x_qubit_counts) for index in range (y_qubit_counts - j)], c)
+                    circuits.append(qc)
+                
+                if self.beta_y != 0.0:
+                    c = ClassicalRegister(y_qubit_counts, 'my_creg')
+                    qc = QuantumCircuit(num_qubits)
+                    qc.add_register(c)
+                    qc.append(ansatz_gate, qc.qubits)
+                    qc.measure([(i + x_qubit_counts) for i in range (y_qubit_counts)], c)
+                    circuits.append(qc)
+                
+                # Periodic in x direction
+                qc = QuantumCircuit(num_qubits + 1)
+                c = ClassicalRegister(1, "my_creg")
+                qc.add_register(c)
+                
+                qc.append(ansatz_gate, qc.qubits[1:])
+                qc = QFT_LNN(qc, x_qubit_counts, 1)
+                qc.h(0)
+                
+                for idx in range(x_qubit_counts):
+                    qc.cp((2 * np.pi / (2**x_qubit_counts)) * (2**idx), 0, x_qubit_counts - idx)
+                
+                qc.h(0)
+                
+                qc.measure([0], c)
+                circuits.append(qc)
+                
+            elif self.boundary_condition_list[circuit_idx] == "PP":
+                # Periodic in x direction
+                qc = QuantumCircuit(num_qubits + 1)
+                c = ClassicalRegister(1, "my_creg")
+                qc.add_register(c)
+                
+                qc.append(ansatz_gate, qc.qubits[1:])
+                qc = QFT_LNN(qc, x_qubit_counts, 1)
+                qc.h(0)
+                
+                for idx in range(x_qubit_counts):
+                    qc.cp((2 * np.pi / (2**x_qubit_counts)) * (2**idx), 0, x_qubit_counts - idx)
+                
+                qc.h(0)
+                
+                qc.measure([0], c)
+                circuits.append(qc)
+                
+                # Periodic in y direction
+                qc = QuantumCircuit(num_qubits + 1)
+                c = ClassicalRegister(1, "my_creg")
+                qc.add_register(c)
+                
+                qc.append(ansatz_gate, qc.qubits[1:])
+                qc = QFT_LNN(qc, y_qubit_counts, 1 + x_qubit_counts)
+                qc.h(0)
+                
+                for idx in range(y_qubit_counts):
+                    qc.cp((2 * np.pi / (2**y_qubit_counts)) * (2**idx), 0, num_qubits - idx)
+                
+                qc.h(0)
+                
+                qc.measure([0], c)
+                circuits.append(qc)
+            elif self.boundary_condition_list[circuit_idx] == "RR":
+                
+                for j in range (y_qubit_counts):
+                    qc = QuantumCircuit(num_qubits)
+                    c = ClassicalRegister(y_qubit_counts - j, 'my_creg')
+                    qc.add_register(c)
+                    qc.append(ansatz_gate, qc.qubits)
+                    
+                    for i in range (y_qubit_counts - 1 - j):
+                        qc.cx(i + 1 + x_qubit_counts, i + x_qubit_counts)
+                        
+                    qc.h(num_qubits - 1 - j)
+                    qc.measure([(index + x_qubit_counts) for index in range (y_qubit_counts - j)], c)
+                    circuits.append(qc)
+                
+                if self.beta_y != 0.0:
+                    c = ClassicalRegister(y_qubit_counts, 'my_creg')
+                    qc = QuantumCircuit(num_qubits)
+                    qc.add_register(c)
+                    qc.append(ansatz_gate, qc.qubits)
+                    qc.measure([(i + x_qubit_counts) for i in range (y_qubit_counts)], c)
+                    circuits.append(qc)
+                    
+                
+                for j in range (x_qubit_counts):
+                    qc = QuantumCircuit(num_qubits)
+                    c = ClassicalRegister(x_qubit_counts - j, 'my_creg')
+                    qc.add_register(c)
+                    qc.append(ansatz_gate, qc.qubits)
+                    
+                    for i in range (x_qubit_counts - 1 - j):
+                        qc.cx(i + 1, i)
+                        
+                    qc.h(x_qubit_counts - 1 - j)
+                    qc.measure([(index) for index in range (x_qubit_counts - j)], c)
+                    circuits.append(qc)
+                
+                if self.beta_x != 0.0:
+                    c = ClassicalRegister(x_qubit_counts, 'my_creg')
+                    qc = QuantumCircuit(num_qubits)
+                    qc.add_register(c)
+                    qc.append(ansatz_gate, qc.qubits)
+                    qc.measure([i for i in range (x_qubit_counts)], c)
+                    circuits.append(qc)
+                
+        return circuits
+
+    def make_evs(self, 
+                 count_list : List[Dict[str, int]]
+                ) -> List[float]:
+        """
+        Post-process measurement counts into expectation values.
+        
+        Args:
+            count_list: List of count dictionaries (from simulator/hardware)
+            
+        Returns:
+            qevs_list: Computed expectation values (float) for each problem
+        """
+        
+        trace_idx = 0
+        qevs_list = []
+        
+        for evs_idx in range (self.num_evs):
+            num_qubits = self.num_qubits_list[evs_idx]
+            dx = self.dx_list[evs_idx]
+            dy = self.dy_list[evs_idx]
+            x_qubit_counts = self.x_qubit_counts_list[evs_idx]
+            y_qubit_counts = num_qubits - x_qubit_counts
+            
+            qevs = 0
+            
+            if self.boundary_condition_list[evs_idx] == "RP":
+                
+                for j in range (x_qubit_counts):
+                    counts = count_list[trace_idx + j]
+                    
+                    if j == x_qubit_counts - 1:
+                        qevs += (counts.get('0', 0) - counts.get('1', 0)) / self.num_shots
+                        
+                    else:
+                        qevs += (counts.get('0' + '1' + '0' * (x_qubit_counts - j - 2), 0) - counts.get('1' + '1' + '0' * (x_qubit_counts - j - 2), 0)) / self.num_shots
+                trace_idx += x_qubit_counts
+                if self.beta_x != 0.0:
+                    coefficient = self.beta_x / (self.beta_x - self.alpha_x * dx)
+                    counts = count_list[trace_idx + x_qubit_counts]
+                    correction = (counts.get('0' * x_qubit_counts, 0) + counts.get('1' * x_qubit_counts, 0)) / self.num_shots
+                    qevs += correction * coefficient
+                    trace_idx += 1
+                
+                counts = count_list[trace_idx]
+                qevs += 2 * (counts.get('0', 0) - counts.get('1', 0)) / self.num_shots
+                trace_idx += 1
+            
+            elif self.boundary_condition_list[evs_idx] == "PR":
+                
+                for j in range (y_qubit_counts):
+                    counts = count_list[trace_idx + j]
+                    
+                    if j == y_qubit_counts - 1:
+                        qevs += (counts.get('0', 0) - counts.get('1', 0)) / self.num_shots
+                        
+                    else:
+                        qevs += (counts.get('0' + '1' + '0' * (y_qubit_counts - j - 2), 0) - counts.get('1' + '1' + '0' * (y_qubit_counts - j - 2), 0)) / self.num_shots
+                trace_idx += y_qubit_counts
+                
+                if self.beta_y != 0.0:
+                    coefficient = self.beta_y / (self.beta_y - self.alpha_y * dy)
+                    counts = count_list[trace_idx + y_qubit_counts]
+                    correction = (counts.get('0' * y_qubit_counts, 0) + counts.get('1' * y_qubit_counts, 0)) / self.num_shots
+                    qevs += correction * coefficient
+                    trace_idx += 1
+                counts = count_list[trace_idx]
+                qevs += 2 * (counts.get('0', 0) - counts.get('1', 0)) / self.num_shots
+                trace_idx += 1
+                
+            elif self.boundary_condition_list[evs_idx] == "PP":
+                counts = count_list[trace_idx]
+                qevs += 2 * (counts.get('0', 0) - counts.get('1', 0)) / self.num_shots
+                counts = count_list[trace_idx + 1]
+                qevs += 2 * (counts.get('0', 0) - counts.get('1', 0)) / self.num_shots
+                trace_idx += 2
+                
+            elif self.boundary_condition_list[evs_idx] == "RR":
+                
+                for j in range (y_qubit_counts):
+                    counts = count_list[trace_idx + j]
+                    
+                    if j == y_qubit_counts - 1:
+                        qevs += (counts.get('0', 0) - counts.get('1', 0)) / self.num_shots
+                        
+                    else:
+                        qevs += (counts.get('0' + '1' + '0' * (y_qubit_counts - j - 2), 0) - counts.get('1' + '1' + '0' * (y_qubit_counts - j - 2), 0)) / self.num_shots
+                trace_idx += y_qubit_counts
+                if self.beta_y != 0.0:
+                    coefficient = self.beta_y / (self.beta_y - self.alpha_y * dy)
+                    counts = count_list[trace_idx]
+                    correction = (counts.get('0' * y_qubit_counts, 0) + counts.get('1' * y_qubit_counts, 0)) / self.num_shots
+                    qevs += correction * coefficient
+                    trace_idx += 1
+                
+                for j in range (x_qubit_counts):
+                    counts = count_list[trace_idx + j]
+                    
+                    if j == x_qubit_counts - 1:
+                        qevs += (counts.get('0', 0) - counts.get('1', 0)) / self.num_shots
+                        
+                    else:
+                        qevs += (counts.get('0' + '1' + '0' * (x_qubit_counts - j - 2), 0) - counts.get('1' + '1' + '0' * (x_qubit_counts - j - 2), 0)) / self.num_shots
+                trace_idx += x_qubit_counts
+                if self.beta_x != 0.0:
+                    coefficient = self.beta_x / (self.beta_x - self.alpha_x * dx)
+                    counts = count_list[trace_idx]
+                    correction = (counts.get('0' * x_qubit_counts, 0) + counts.get('1' * x_qubit_counts, 0)) / self.num_shots
+                    qevs += correction * coefficient
+                    trace_idx += 1
+                
+            qevs -= 4
+            
+            qevs_list.append(qevs)
+            
+        return qevs_list
+    
