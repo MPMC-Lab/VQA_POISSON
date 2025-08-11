@@ -80,7 +80,7 @@ parameters = ParameterVector(r'$\boldsymbol{\theta}$', length=param_num)
 psi_param_circuit = make_LNN_ansatz(num_qubits, ansatz_depth, parameters)
 
 print("Parameterized circuit constructed.")
-print(f"  - Number of qubits: {num_qubits}")
+print(f"  - Number of qubits: {psi_param_circuit.num_qubits}")
 print(f"  - Number of parameters: {param_num}")
 
 f_vector = np.loadtxt("input_1D/rhs.csv", delimiter=",")
@@ -182,4 +182,5 @@ with open("output_1D/VQA_result.txt", "w") as f:
 print("Results saved to:")
 print("  - output_1D/VQA_optimal_parameters.csv")
 print("  - output_1D/VQA_optimal_amplitudes.csv")
+
 print("  - output_1D/VQA_result.txt")
