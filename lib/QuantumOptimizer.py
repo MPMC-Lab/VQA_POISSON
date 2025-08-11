@@ -5,11 +5,11 @@ import numpy as np
 from scipy.optimize import minimize
 from functools import partial
 
-from lib.QuantumCalculator import LaplacianEVProcessor1D, InnerProductProcessor
+from lib.QuantumCalculator import LaplacianEVProcessor1D, LaplacianEVProcessor2D, InnerProductProcessor
 from lib.classical_functions import *
 
 
-class VQA_PoissonOptimizer1D:
+class VQA_PoissonOptimizer:
     """
     Variational Quantum Algorithm Optimizer for 1D Poisson equation.
     
@@ -18,7 +18,7 @@ class VQA_PoissonOptimizer1D:
     """
     def __init__(
         self,
-        laplacian_processor: LaplacianEVProcessor1D,
+        laplacian_processor: Union[LaplacianEVProcessor1D, LaplacianEVProcessor2D],
         numerator_processor: InnerProductProcessor
     ):
         
@@ -62,7 +62,9 @@ class VQA_PoissonOptimizer1D:
             counts = self.numerator_processor.hardware_execute(transpiled)
 
         num = self.numerator_processor.make_evs(counts)[0]
+
         qevs = (num / denom) * 0.5
+        
         return qevs
     
     def optimize(
@@ -148,5 +150,4 @@ class VQA_PoissonOptimizer1D:
             result = job.result()[0]
             counts = result.data.my_creg.get_counts()
         
-
         return count_list(counts, grid_num, self.laplacian_processor.num_shots, num_qubits, reverse = False)
