@@ -1,5 +1,5 @@
 from lib.QuantumCalculator import LaplacianEVProcessor1D, InnerProductProcessor
-from lib.QuantumOptimizer import VQA_PoissonOptimizer1D
+from lib.QuantumOptimizer import VQA_PoissonOptimizer
 from lib.classical_functions import *
 from lib.quantum_functions import *
 from qiskit_ibm_runtime import QiskitRuntimeService
@@ -153,7 +153,7 @@ numerator_processor = InnerProductProcessor(
 # ================================
 print("🚀 Starting optimization...")
 
-optimizer = VQA_PoissonOptimizer1D(
+optimizer = VQA_PoissonOptimizer(
             laplacian_processor = laplacian_processor,
             numerator_processor = numerator_processor)
 
@@ -184,4 +184,5 @@ print("  - output_1D/VQA_optimal_parameters.csv")
 print("  - output_1D/VQA_optimal_amplitudes.csv")
 
 print("  - output_1D/VQA_result.txt")
+
 
