@@ -1,4 +1,4 @@
-# VQA-POISSON
+# VQA_POISSON
 
 VQA_POISSON is a hybrid quantum-classical solver designed to compute the solution of the Poisson equation using near-term quantum devices (NISQ). The algorithm is based on a variational formulation, where the trial solution is encoded into a quantum circuit, and the energy functional is minimized using a classical optimizer.
 
