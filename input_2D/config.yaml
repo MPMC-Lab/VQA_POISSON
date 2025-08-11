@@ -1,0 +1,34 @@
+# Number of grid points along the x & y direction (excluding boundary, must be a power of 2)
+x_grid_num: 32
+y_grid_num: 16
+
+# Depth of the variational ansatz
+ansatz_depth: 4
+
+# Type of boundary condition: A two-letter combination of 'P' or 'R'
+boundary_condition: PR
+
+# Type of optimizer
+method: Powell
+
+# x-directional length of domain
+x0: 0.0
+x1: 1.0
+
+# y-directional width of domain
+y0: 0.0
+y1: 1.0
+
+# Boundary constants (Only used for 'R')
+alpha_x: 0.0
+alpha_y: 0.0
+beta_x: 0.0
+beta_y: 0.0
+gamma_x: 0.0
+gamma_y: 0.0
+
+# Number of shots per circuit execution
+num_shots: 524288
+
+# Backend type: either 'simulator' or 'hardware'
+backend: simulator
