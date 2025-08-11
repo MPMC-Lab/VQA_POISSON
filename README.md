@@ -43,7 +43,7 @@ This implementation is based on the following publications:
   - `LaplacianEVProcessor` for computing Laplacian expectation values under Robin or Periodic boundary conditions;
   - `InnerProductProcessor` for evaluating inner products in variational energy formulations.
 - `lib/QuantumOptimizer.py` : 
-  Classical optimization engine for VQA, minimizing problem-specific cost functions (e.g., Rayleigh quotient) using results from `QuantumCalculator` processors.
+  Classical optimization engine for VQA, minimizing the cost function using results from `QuantumCalculator` processors.
   
 - `lib/quantum_functions.py` : qiskit-based functions to implement QFT LNN (Park et al.) and linear ansatze
 - `lib/classical_functions.py` : NumPy-based emulations of quantum state preparations and gate applications
