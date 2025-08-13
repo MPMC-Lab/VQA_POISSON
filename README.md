@@ -93,6 +93,7 @@ Please make sure the dependencies are installed and `config.yaml` is properly se
 To execute the main script:
 
 ```bash
+cd VQA_POISSON
 python main_1D.py
 ```
 
