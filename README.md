@@ -47,7 +47,7 @@ This implementation is based on the following publications:
   
 - `lib/quantum_functions.py` : qiskit-based functions to implement QFT LNN (Park et al.) and linear ansatze
 - `lib/classical_functions.py` : NumPy-based emulations of quantum state preparations and gate applications
-- `example_1D.ipynb` : Jupyter notebook to demonstrate a simple example of VQA_POISSON optimization in 1D.
+- `example_1D.ipynb` : Jupyter notebook to demonstrate a simple example of VQA_POISSON (simulator) optimization in 1D.
 
 - `main.py` : Main Python code for optimization. Make sure your credentials for IonQ and IBM are specified and the files in `input` are correctly initialized.
 
