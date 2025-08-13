@@ -49,7 +49,7 @@ This implementation is based on the following publications:
 - `lib/classical_functions.py` : NumPy-based emulations of quantum state preparations and gate applications
 - `example_1D.ipynb` : Jupyter notebook to demonstrate a simple example of VQA_POISSON optimization in 1D.
 
-- `main_1D.py` : Main Python code for 1D optimization.
+- `main.py` : Main Python code for optimization. Make sure your credentials for IonQ and IBM are specified and the files in `input` are correctly initialized.
 
 - `input/rhs.csv` : User-defined RHS array to input in main_1D.py. Make sure grid_num is equal to the size of this array.
 - `input/initial_params.csv` : User-defined initial parameters for optimization. Make sure this is equal to the size of the number of parameters printed on the terminal.
