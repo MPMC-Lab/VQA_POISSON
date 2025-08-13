@@ -95,6 +95,7 @@ To execute the main script:
 ```bash
 cd VQA_POISSON
 python main_1D.py
+python main_2D.py
 ```
 
 Make sure your API key are set properly either for IonQ simulators or IBM hardwares.
