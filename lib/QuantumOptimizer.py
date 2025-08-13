@@ -11,10 +11,10 @@ from lib.classical_functions import *
 
 class VQA_PoissonOptimizer:
     """
-    Variational Quantum Algorithm Optimizer for 1D Poisson equation.
+    Variational Quantum Algorithm Optimizer for 1D or 2D Poisson equation.
     
     This class handles the cost evaluation and classical optimization loop 
-    using two quantum processors: LaplacianEVProcessor1D and InnerProductProcessor.
+    using two quantum processors: LaplacianEVProcessor and InnerProductProcessor.
     """
     def __init__(
         self,
@@ -37,7 +37,6 @@ class VQA_PoissonOptimizer:
         Args:
             params: Parameters for the ansatz circuit.
             optimization_level: Transpiler optimization level.
-            epsilon: Stability constant, not used for 'D' (homogeneous Dirichlet boundaries).
             is_simulator: Whether to run on simulator or hardware.
 
         Returns:
@@ -81,7 +80,6 @@ class VQA_PoissonOptimizer:
         Args:
             initial_params: Starting parameter vector.
             method: Optimization method (default 'COBYLA').
-            epsilon: Stability constant for Neumann/Periodic.
             optimization_level: Qiskit transpile optimization level.
             options: Dictionary of optimizer-specific options.
 
