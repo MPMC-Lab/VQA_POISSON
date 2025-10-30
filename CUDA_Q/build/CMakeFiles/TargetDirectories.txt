@@ -1,0 +1,4 @@
+/mnt/c/Users/MPMC/Desktop/CUDAQ_repository/build/CMakeFiles/program_SD.dir
+/mnt/c/Users/MPMC/Desktop/CUDAQ_repository/build/CMakeFiles/program_FD_LNN.dir
+/mnt/c/Users/MPMC/Desktop/CUDAQ_repository/build/CMakeFiles/edit_cache.dir
+/mnt/c/Users/MPMC/Desktop/CUDAQ_repository/build/CMakeFiles/rebuild_cache.dir
