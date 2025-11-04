@@ -98,7 +98,7 @@ python main_1D.py
 python main_2D.py
 ```
 
-Make sure your API key are set properly either for IonQ simulators or IBM hardwares.
+**Make sure your API key are set properly either for IonQ simulators or IBM hardwares.**
 
 You can modify problem settings (grid size, ansatz depth, backend, etc.) via `config.yaml`.
 
