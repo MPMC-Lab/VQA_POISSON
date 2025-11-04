@@ -1,4 +1,4 @@
-# VQA_POISSON_CUDAQ
+# CUDA-Q Poisson VQA
 
 This directory hosts the CUDA-Q implementation of the variational quantum algorithm (VQA) used in **VQA_POISSON**. It mirrors the hybrid quantum-classical workflow of the Python toolkit while targeting NVIDIA's CUDA Quantum stack (`nvq++`) to run SD and FD (LNN) methods of VQA_POISSON.
 
@@ -75,9 +75,8 @@ The CUDA-Q executables accept optional CLI arguments:
 ./program_SD.x [num_qubits] [ansatz_depth] [shots]
 ```
 
-- Defaults are `num_qubits=9`, `ansatz_depth=4`, `shots=524288`.【F:CUDA_Q/VQA_FD_LNN.cpp†L156-L211】【F:CUDA_Q/VQA_SD.cpp†L200-L255】
-- Each run loads initial parameters from `init/init_<num_qubits>_<depth>.csv`; ensure the file exists or provide your own seeds in that format.【F:CUDA_Q/VQA_FD_LNN.cpp†L220-L236】
-- NLopt (COBYLA) termination criteria can be tuned inside the source (`nlopt_set_*` calls) if tighter tolerances are needed.【F:CUDA_Q/VQA_FD_LNN.cpp†L240-L272】
+- Defaults are `num_qubits=9`, `ansatz_depth=4`, `shots=524288`.
+- Each run loads initial parameters from `init/init_<num_qubits>_<depth>.csv`; ensure the file exists or provide your own seeds in that format.
 
 To compare against the classical baseline:
 
@@ -85,13 +84,13 @@ To compare against the classical baseline:
 ./classical_optimization/build/program.x
 ```
 
-This binary reads the same initialization file, performs COBYLA entirely on the classical surrogate, and logs the cost, trace distance, and L2 error after each `(dim + 1)` evaluations.【F:CUDA_Q/classical_optimization/classical_optimization.cpp†L168-L240】
+This binary reads the same initialization file, performs COBYLA entirely on the classical surrogate, and logs the cost, trace distance, and L2 error for each parameter update.
 
 ## Output & post-processing
 
-- Quantum runs write `evs`, `trace`, and `l2` logs under `CUDA_Q/log/` with suffix `<num_qubits>_<shots>` to match the execution configuration.【F:CUDA_Q/VQA_FD_LNN.cpp†L272-L304】【F:CUDA_Q/VQA_SD.cpp†L272-L304】
-- The classical optimizer mirrors the same metrics under `CUDA_Q/classical_optimization/log/`.【F:CUDA_Q/classical_optimization/classical_optimization.cpp†L204-L236】
-- Execute `python3 generate_history.py` to generate the history plots in `CUDA_Q/history/`, overlaying SD, FD-LNN, and classical curves for easy benchmarking.【F:CUDA_Q/generate_history.py†L1-L74】
+- Quantum runs write `evs`, `trace`, and `l2` logs under `CUDA_Q/log/` with suffix `<num_qubits>_<shots>` to match the execution configuration.
+- The classical optimizer mirrors the same metrics under `CUDA_Q/classical_optimization/log/`.
+- Execute `python3 generate_history.py` to generate the history plots in `CUDA_Q/history/`, overlaying SD, FD-LNN, and classical curves for easy benchmarking.
 
 ## License & citation
 
