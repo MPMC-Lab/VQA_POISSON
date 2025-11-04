@@ -64,7 +64,7 @@ CUDA_Q/
    ```
    The classical executable `program.x` ends up under `classical_optimization/build/`.
 
-The top-level `run.sh` automates all three steps, rebuilding from scratch before launching the binaries.
+The top-level `run.sh` automates all three steps, reproducing the exact same figure as in Figure 7 from the original paper.
 
 ## Running the solvers
 
