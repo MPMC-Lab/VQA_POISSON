@@ -6,7 +6,7 @@ In our implementation, boundary conditions are treated using a modular circuit c
 - The cost functional follows the structure introduced by *Sato et al. (2021)*, using a Rayleigh quotient-type expression for variational minimization.
 - **Robin** boundary conditions are implemented based on the variational formulations proposed by *Choi & Ryu (2024)*.
 - **Periodic** boundary conditions leverage *QFT-based methods* inspired by *Park & Ahn (2023)* and *Liu et al. (2025)*.
-- For reproducibility of the PO method from *Sato et al. (2021)*, we added a function to add a permutation gate for a given input circuit.
+- For reproducibility of the PO method of *Sato et al. (2021)*, we provide a function to add a permutation gate for a given input circuit.
 
 This implementation is based on the following publications:
 
