@@ -46,7 +46,7 @@ def permutation_gate(qc, n, start_index=0):
     ancilla_last_index = (2 * n - 3) - n
     num_qubits = qc.num_qubits
     def map_index(idx):
-        if idx >= ancilla_last_index: # ancilla에 해당하지 않는다면 start_index만큼 밀어주기
+        if idx >= ancilla_last_index:
             idx = idx + start_index
             return num_qubits - 1 - idx
         
@@ -100,4 +100,5 @@ def permutation_gate(qc, n, start_index=0):
         qc.cx(map_index(2*n - 4), map_index(2*n - 5))
         qc.x(map_index(2*n - 4))
         return qc
+
 
