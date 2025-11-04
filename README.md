@@ -45,7 +45,7 @@ This implementation is based on the following publications:
 - `lib/QuantumOptimizer.py` : 
   Classical optimization engine for VQA, minimizing the cost function using results from `QuantumCalculator` processors.
   
-- `lib/quantum_functions.py` : qiskit-based functions to implement QFT LNN (Park et al.) and linear ansatze
+- `lib/quantum_functions.py` : qiskit-based functions to implement variational ansätze, LNN-optimized QFT block from Park et al., and permutation operator from Sato et al.
 - `lib/classical_functions.py` : NumPy-based emulations of quantum state preparations and gate applications
 - `example_1D.ipynb` : Jupyter notebook to demonstrate a simple example of VQA_POISSON (simulator) optimization in 1D.
 
