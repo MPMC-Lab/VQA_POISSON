@@ -38,4 +38,65 @@ def make_LNN_ansatz(num_qubits, ansatz_depth, parameters):
             qc.ry(parameters[i + depth * (num_qubits)],  i)
         for i in range (0, num_qubits-1):
             qc.cx( i,  (i+1))
+
     return qc
+
+def permutation_gate(qc, n, start_index=0):
+    
+    ancilla_last_index = (2 * n - 3) - n
+    num_qubits = qc.num_qubits
+    def map_index(idx):
+        if idx >= ancilla_last_index: # ancilla에 해당하지 않는다면 start_index만큼 밀어주기
+            idx = idx + start_index
+            return num_qubits - 1 - idx
+        # ancilla에 해당한다면 그냥 뱉어주기
+        return num_qubits - 1 - idx
+
+    if n == 2:
+        qc.cx(map_index(1), map_index(0))
+        qc.x(map_index(1))
+        return qc
+    elif n == 3:
+        qc.ccx(map_index(2), map_index(1), map_index(0))
+        qc.cx(map_index(2), map_index(1))
+        qc.x(map_index(2))
+        return qc
+    elif n == 4:
+        qc.ccx(map_index(4), map_index(3), map_index(0))
+        qc.ccx(map_index(0), map_index(2), map_index(1))
+        qc.ccx(map_index(4), map_index(3), map_index(0))
+        qc.ccx(map_index(4), map_index(3), map_index(2))
+        qc.cx(map_index(4), map_index(3))
+        qc.x(map_index(4))
+        return qc
+    else:
+        for j in range(5, n+1):
+            offset = (n + 1) - j
+            qc.ccx(map_index(2*n - 4), map_index(2*n - 5), map_index(2*n - 5 - (n-1)))
+
+            for i in range(offset):
+                qc.ccx(map_index(2*n - 6 - i),
+                       map_index(2*n - 5 - i - (n-1)),
+                       map_index(2*n - 6 - i - (n-1)))
+
+            qc.ccx(map_index(2*n - 6 - offset),
+                   map_index(2*n - 7 - (n-3) - offset),
+                   map_index(2*n - 7 - offset))
+
+            for i in range(offset-1, -1, -1):
+                qc.ccx(map_index(2*n - 6 - i),
+                       map_index(2*n - 5 - i - (n-1)),
+                       map_index(2*n - 6 - i - (n-1)))
+
+            qc.ccx(map_index(2*n - 4),
+                   map_index(2*n - 5),
+                   map_index(2*n - 5 - (n-1)))
+
+        qc.ccx(map_index(2*n - 4), map_index(2*n - 5), map_index(2*n - 5 - (n-1)))
+        qc.ccx(map_index(2*n - 6), map_index(2*n - 7 - (n-3)), map_index(2*n - 7))
+        qc.ccx(map_index(2*n - 4), map_index(2*n - 5), map_index(2*n - 5 - (n-1)))
+
+        qc.ccx(map_index(2*n - 4), map_index(2*n - 5), map_index(2*n - 6))
+        qc.cx(map_index(2*n - 4), map_index(2*n - 5))
+        qc.x(map_index(2*n - 4))
+        return qc
