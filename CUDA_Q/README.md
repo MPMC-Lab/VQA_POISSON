@@ -1,27 +1,27 @@
-# CUDA-Q Poisson VQA
+# VQA_POISSON_CUDAQ
 
-This directory hosts the CUDA-Q implementation of the variational quantum algorithm (VQA) used in **VQA_POISSON**. It mirrors the hybrid quantum-classical workflow of the Python toolkit while targeting NVIDIA's CUDA Quantum stack (`nvq++`) to run depth-efficient ansätze, linear-nearest-neighbor (LNN) QFTs, and classical pre/post-processing entirely in C++.
+This directory hosts the CUDA-Q implementation of the variational quantum algorithm (VQA) used in **VQA_POISSON**. It mirrors the hybrid quantum-classical workflow of the Python toolkit while targeting NVIDIA's CUDA Quantum stack (`nvq++`) to run SD and FD (LNN) methods of VQA_POISSON.
 
 ## Features
 
-- **CUDA-Q kernels for Poisson solvers** – `VQA_FD_LNN.cpp` and `VQA_SD.cpp` implement the finite-difference LNN and spectral decomposition variants of the Rayleigh quotient minimization presented in the parent README.【F:CUDA_Q/VQA_FD_LNN.cpp†L1-L120】【F:CUDA_Q/VQA_SD.cpp†L1-L120】
-- **Reusable ansatz & QFT utilities** – `VQA_qpu.hpp` defines the variational layers, inverse preparation, controlled-phase primitives, and Park & Ahn inspired LNN QFT routine shared across kernels.【F:CUDA_Q/VQA_qpu.hpp†L1-L108】
-- **Shared classical helpers** – `include/` provides state preparation, Laplacian assembly, linear algebra utilities, and CSV IO helpers used by both the CUDA-Q executables and the classical baseline.【F:CUDA_Q/include/state_prep.cpp†L1-L48】【F:CUDA_Q/VQA.hpp†L1-L24】
-- **Classical baseline** – `classical_optimization/` reproduces the cost function in pure C++/NLopt for benchmarking against the quantum executions.【F:CUDA_Q/classical_optimization/classical_optimization.cpp†L1-L120】
-- **Logging & visualization** – execution traces, L2 errors, and trace distances are written under `log/` and plotted via `generate_history.py` into `history/` for side-by-side comparisons.【F:CUDA_Q/generate_history.py†L1-L74】
+- **CUDA-Q kernels for Poisson solvers** – `VQA_FD_LNN.cpp` and `VQA_SD.cpp` implement the FD (LNN) and SD method presented in the parent README.
+- **Reusable ansatz & QFT utilities** – `VQA_qpu.hpp` defines the variational ansätze preparation, controlled-phase primitives, and Park & Ahn (2023) inspired LNN QFT routine shared across kernels.
+- **Shared classical helpers** – `include/` provides state preparation, Laplacian assembly, linear algebra utilities, and CSV IO helpers used by both the CUDA-Q executables and the classical baseline.
+- **Classical baseline** – `classical_optimization/` reproduces the cost function in pure C++/NLopt for benchmarking against the quantum executions.
+- **Logging & visualization** – execution traces, L2 errors, and trace distances are written under `log/` and plotted via `generate_history.py` into `history/` for side-by-side comparisons.
 
 ## Directory layout
 
 ```
 CUDA_Q/
 ├── CMakeLists.txt                 # top-level build rules for CUDA-Q programs
-├── VQA_FD_LNN.cpp                 # finite-difference (LNN QFT) CUDA-Q executable
-├── VQA_SD.cpp                     # spectral decomposition CUDA-Q executable
+├── VQA_FD_LNN.cpp                 # FD method of VQA_POISSON
+├── VQA_SD.cpp                     # SD method of VQA_POISSON
 ├── VQA.hpp                        # shared declarations for classical helpers & IO
 ├── VQA_qpu.hpp                    # ansatz, inverse ansatz, QFT, numerator kernels
 ├── include/                       # reusable classical helper implementations
 ├── classical_optimization/        # COBYLA baseline optimizer & its build files
-├── init/                          # initial parameter seeds (num_qubits_depth.csv)
+├── init/                          # initial parameter seeds used in the original paper (num_qubits_depth.csv)
 ├── log/                           # NLopt progress logs for CUDA-Q runs
 ├── history/                       # matplotlib figures generated from logs
 ├── build/                         # default build directory for CUDA-Q binaries
@@ -33,8 +33,8 @@ CUDA_Q/
 
 - CUDA Quantum (`nvq++`) toolchain with an `nvidia` target available.
 - CMake ≥ 3.10 and Ninja (or replace `-G "Ninja"` with your generator of choice).
-- NLopt C library (set `NLOPT_INCLUDE_DIR` / `NLOPT_LIBRARY_DIR` for CMake or export before running `run.sh`).【F:CUDA_Q/CMakeLists.txt†L1-L36】
-- Python ≥ 3.8 with `numpy` and `matplotlib` for log visualization.【F:CUDA_Q/generate_history.py†L1-L74】
+- NLopt C library (set `NLOPT_INCLUDE_DIR` / `NLOPT_LIBRARY_DIR` for CMake or export before running `run.sh`).
+- Python ≥ 3.8 with `numpy` and `matplotlib` for log visualization.
 
 ## Building
 
@@ -46,18 +46,25 @@ CUDA_Q/
 2. Configure and build the CUDA-Q executables:
    ```bash
    cd CUDA_Q
-   cmake -S . -B build -G "Ninja"
-   cmake --build build
+   rm -rf CMakeCache.txt CMakeFiles
+   cd build
+   cmake -G "Ninja" ..
+   cmake --build .
+   cd ..
    ```
    This produces `program_FD_LNN.x` and `program_SD.x` in `CUDA_Q/build`.【F:CUDA_Q/CMakeLists.txt†L21-L36】
 3. (Optional) Build the classical baseline:
    ```bash
-   cmake -S classical_optimization -B classical_optimization/build -G "Ninja"
-   cmake --build classical_optimization/build
+   cd CUDA_Q
+   cd classical_optimization
+   rm -rf CMakeCache.txt CMakeFiles
+   cd build
+   cmake -G "Ninja" ..
+   cmake --build .
    ```
-   The classical executable `program.x` ends up under `classical_optimization/build/`.【F:CUDA_Q/classical_optimization/CMakeLists.txt†L1-L16】
+   The classical executable `program.x` ends up under `classical_optimization/build/`.
 
-The top-level `run.sh` automates all three steps, rebuilding from scratch before launching the binaries.【F:CUDA_Q/run.sh†L1-L24】
+The top-level `run.sh` automates all three steps, rebuilding from scratch before launching the binaries.
 
 ## Running the solvers
 
