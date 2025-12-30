@@ -16,10 +16,20 @@ import yaml
 mpl.rcParams['text.usetex'] = True
 mpl.rcParams['text.latex.preamble'] = r'\usepackage{amsmath}'
 
+# The main entry script for running a 1D Poisson solver via variational quantum algorithms.
+# The flow is:
+#   1) Load user configuration and RHS data.
+#   2) Select a quantum backend (IonQ simulator or IBM hardware).
+#   3) Build the ansatz circuit and Laplacian/numerator processors.
+#   4) Run the hybrid optimizer to obtain optimal parameters and amplitudes.
+#   5) Persist optimization results to the output directory.
+
 # ================================
 # Load Configuration
 # ================================
 print("Loading configuration from config.yaml...")
+# The configuration specifies the domain, discretization, hardware settings,
+# optimization method, and boundary conditions for the PDE.
 with open("input_1D/config.yaml", "r") as file:
     config = yaml.safe_load(file)
 
@@ -76,6 +86,8 @@ print(f"  - num_shots: {num_shots}")
 print(f"  - backend: {backend}")
 print(f"  - optimization method: {method}")
 
+# Parameterize the ansatz circuit. The number of parameters scales
+# with the number of qubits and ansatz depth
 parameters = ParameterVector(r'$\boldsymbol{\theta}$', length=param_num)
 psi_param_circuit = make_LNN_ansatz(num_qubits, ansatz_depth, parameters)
 
@@ -83,6 +95,7 @@ print("Parameterized circuit constructed.")
 print(f"  - Number of qubits: {psi_param_circuit.num_qubits}")
 print(f"  - Number of parameters: {len(psi_param_circuit.parameters)}")
 
+# Right-hand-side vector of the Poisson equation. Scaled by dx^2 to match discretization.
 f_vector = np.loadtxt("input_1D/rhs.csv", delimiter=",")
 f_vector = f_vector * dx * dx
 
@@ -97,10 +110,12 @@ if boundary_condition == 'R':
     print(r"  - $\alpha U_N - \beta \frac{\partial U_N}{\partial n} = \gamma$")
     
     # Dirichlet Correction
+    # Adjust the RHS to incorporate non-homogeneous Robin conditions.
     if gamma != 0.0:
         f_vector[0] = f_vector[0] - (gamma / (alpha - (beta / dx)))
         f_vector[-1] = f_vector[-1] - (gamma / (alpha - (beta / dx)))
     
+    # Build the Laplacian processor with Robin boundary handling.
     laplacian_processor = LaplacianEVProcessor1D(
                                 ansatz_list=[psi_param_circuit],
                                 boundary_condition_list=[boundary_condition],
@@ -125,6 +140,7 @@ else:
     print("[Warning] Periodic boundary condition leads to a nearly-singular Laplacian operator.")
     print("  -> This can result in poor convergence or unstable optimization in VQA.")
     
+    # Build the Laplacian processor under periodic boundary conditions.
     laplacian_processor = LaplacianEVProcessor1D(
                                 ansatz_list=[psi_param_circuit],
                                 boundary_condition_list=[boundary_condition],
@@ -137,8 +153,10 @@ else:
                                 beta = 0.0
                            )
     
+# Normalize RHS for inner product evaluation inside the optimizer.
 f_normalized = f_vector / np.linalg.norm(f_vector)
 
+# Processor computing inner products ⟨ψ(θ)|f⟩^2 required by the VQA objective.
 numerator_processor = InnerProductProcessor(
         ansatz_list=[psi_param_circuit],
         numerator_list = [f_normalized],
@@ -153,12 +171,16 @@ numerator_processor = InnerProductProcessor(
 # ================================
 print("🚀 Starting optimization...")
 
+# Hybrid classical optimizer that queries quantum subroutines (Laplacian
+# expectation values and inner products). The method is selected via config.
 optimizer = VQA_PoissonOptimizer(
             laplacian_processor = laplacian_processor,
             numerator_processor = numerator_processor)
 
+# Starting point for variational parameters.
 initial_params = np.loadtxt("input_1D/initial_params.csv", delimiter=",")
 
+# Execute the optimization loop.
 result = optimizer.optimize(
             initial_params = initial_params,
             method = method
@@ -169,9 +191,11 @@ print("Optimization complete.")
 # ================================
 # Get Amplitude
 # ================================
+# Recover the optimized wavefunction amplitudes from the trained parameters
 amplitudes = optimizer.get_amplitudes(optimal_params = result.x)
 
 os.makedirs("output_1D", exist_ok=True)
+# Persist optimization results for downstream analysis/plotting.
 np.savetxt("output_1D/VQA_optimal_parameters.csv", result.x, delimiter=",")
 np.savetxt("output_1D/VQA_optimal_amplitudes.csv", amplitudes, delimiter=",")
 
