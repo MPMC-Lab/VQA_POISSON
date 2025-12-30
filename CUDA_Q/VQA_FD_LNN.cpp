@@ -13,10 +13,23 @@
 #include "VQA_qpu.hpp"
 #include "VQA.hpp"
 
+// -----------------------------------------------------------------------------
+// Finite-difference VQA driver specialized for linear-nearest-neighbor (LNN)
+// connectivity. The program:
+//   * Defines CUDA-Q kernels used for numerator/denominator estimation and
+//     Laplacian eigenvalue sampling under Dirichlet boundaries.
+//   * Wraps the kernels in a COBYLA optimization loop (via NLopt) to minimize
+//     the Rayleigh quotient for the Poisson problem.
+//   * Logs intermediate objective values, L2 errors, and trace distances for
+//     offline analysis.
+// -----------------------------------------------------------------------------
+
 __qpu__ void park_QFT(int num_qubits,
                       int depth,
                       std::vector<double> params) {
 
+  // Denominator circuit evaluating expectation components via an LNN-adapted
+  // QFT and controlled-phase cascade.
   cudaq::qvector<> q(num_qubits + 1);
   int num_qubits1Dpark = (num_qubits/2) + 1;
   variational_ansatz(q, depth, params,
@@ -36,6 +49,8 @@ __qpu__ void park_QFT(int num_qubits,
 __qpu__ void laplacian_dirichlet(int num_qubits, int num_qubits1D, int depth, int circuit_num, std::vector<double> params){
   cudaq::qvector<> q(num_qubits);
 
+  // Expectation circuit for Dirichlet Laplacian eigenvalues on a 1D slice.
+  // The circuit_num parameter walks the slice index to build the Kronecker sum.
   variational_ansatz(q, depth, params,
                      /*start=*/0, /*n=*/num_qubits,
                      /*reverse=*/true);
@@ -68,6 +83,9 @@ struct OptData {
 };
 
 double objective_cb(unsigned n, const double* x, double* /*grad*/, void* ptr){
+  // Objective callback for NLopt. Estimates the Rayleigh quotient using
+  // sampling-based numerator/denominator estimates, applying stabilization
+  // for near-zero denominators and logging progress to disk.
   auto* d = static_cast<OptData*>(ptr);
 
   std::vector<double> theta(x, x + n);
@@ -258,6 +276,7 @@ int main(int argc, char* argv[]){
     evs << std::setprecision(17)
         << bestVal << ' ' << '\n';
 
+    // Compute final classical metrics for the optimized parameters.
     std::vector<double> psi_opt;
     double l2norm_opt = 0.0;
     double trace_opt = 0.0;
@@ -281,3 +300,4 @@ int main(int argc, char* argv[]){
   nlopt_destroy(opt);
   return 0;
 }
+
