@@ -13,6 +13,14 @@ import matplotlib as mpl
 import os
 import yaml
 
+# Main driver for solving the 2D Poisson equation via a variational quantum
+# algorithm (VQA). High-level flow:
+#   1) Load problem configuration and RHS data.
+#   2) Initialize a quantum backend (IonQ simulator or IBM hardware).
+#   3) Build the parameterized ansatz and Laplacian/inner-product processors.
+#   4) Run the hybrid optimizer to obtain variational parameters.
+#   5) Save optimized parameters, amplitudes, and the optimizer report.
+
 mpl.rcParams['text.usetex'] = True
 mpl.rcParams['text.latex.preamble'] = r'\usepackage{amsmath}'
 
@@ -20,6 +28,8 @@ mpl.rcParams['text.latex.preamble'] = r'\usepackage{amsmath}'
 # Load Configuration
 # ================================
 print("Loading configuration from config.yaml...")
+# Configuration provides domain extents, grid resolution, boundary conditions,
+# backend selection, and optimizer method for the 2D PDE.
 with open("input_2D/config.yaml", "r") as file:
     config = yaml.safe_load(file)
 
@@ -88,12 +98,14 @@ print(f"  - num_shots: {num_shots}")
 print(f"  - backend: {backend}")
 print(f"  - optimization method: {method}")
 
+# Parameterized ansatz for the 2D grid. Parameter count scales with qubits and depth.
 parameters = ParameterVector(r'$\boldsymbol{\theta}$', length=param_num)
 psi_param_circuit = make_LNN_ansatz(num_qubits, ansatz_depth, parameters)
 
 print("Parameterized circuit constructed.")
 print(f"  - Number of qubits: {psi_param_circuit.num_qubits}")
 print(f"  - Number of parameters: {len(psi_param_circuit.parameters)}")
+# RHS of the 2D Poisson equation (matrix form). Will be flattened for processing
 f_vector = np.loadtxt("input_2D/rhs.csv", delimiter=",")
 alpha_x = 0.0
 beta_x = 0.0
@@ -111,6 +123,7 @@ if boundary_condition[0] == "R":
     print(r"  - $\alpha_x U_Ni - \beta_x \frac{\partial U_Ni}{\partial n} = \gamma_x$")
     
     # Dirichlet Correction
+    # Incorporate non-homogeneous Robin terms into the RHS along x boundaries.
     if gamma_x != 0.0:
         for i in range (y_grid_num):
             f_vector[0,i] = f_vector[0,i] - (gamma_x / (alpha_x - (beta_x / dx))) / (dx * dx)
@@ -131,11 +144,13 @@ if boundary_condition[1] == "R":
     print(r"  - $\alpha_y U_iN - \beta_y \frac{\partial U_iN}{\partial n} = \gamma_y$")
     
     # Dirichlet Correction
+    # Incorporate non-homogeneous Robin terms into the RHS along y boundaries.
     if gamma_y != 0.0:
         for i in range (x_grid_num):
             f_vector[i, 0] = f_vector[i, 0] - (gamma_y / (alpha_y - (beta_y / dy))) / (dy * dy)
             f_vector[i, y_grid_num - 1] = f_vector[i, y_grid_num - 1] - (gamma_y / (alpha_y - (beta_y / dy))) / (dy * dy)
             
+# Build the Laplacian expectation-value processor for 2D grids.
 laplacian_processor = LaplacianEVProcessor2D(ansatz_list = [psi_param_circuit],
                                              boundary_condition_list = [boundary_condition],
                                              x_qubit_counts_list = [int(np.log2(x_grid_num))],
@@ -149,6 +164,8 @@ laplacian_processor = LaplacianEVProcessor2D(ansatz_list = [psi_param_circuit],
                                              beta_x = beta_x,
                                              beta_y = beta_y
                                              )
+
+# Construct discrete Laplacian operators along each axis and combine via Kronecker sum.
 A_x = laplacian_matrix(n = x_grid_num,
                        boundary_condition = boundary_condition[0],
                        alpha = alpha_x,
@@ -164,9 +181,11 @@ A_y = laplacian_matrix(n = y_grid_num,
 A = np.kron(np.eye(y_grid_num), A_x) + np.kron(A_y, np.eye(x_grid_num))
 check_stability(A, num_shots)
 
+# Flatten and normalize RHS for inner-product evaluation.
 f_vector = f_vector.flatten()
 f_normalized = f_vector / np.linalg.norm(f_vector)
 
+# Processor for computing ⟨ψ(θ)|f⟩ terms used inside the VQA cost.
 numerator_processor = InnerProductProcessor(
         ansatz_list=[psi_param_circuit],
         numerator_list = [f_normalized],
@@ -181,12 +200,15 @@ numerator_processor = InnerProductProcessor(
 # ================================
 print("🚀 Starting optimization...")
 
+# Hybrid classical optimizer that consumes Laplacian EVs and inner products.
 optimizer = VQA_PoissonOptimizer(
             laplacian_processor = laplacian_processor,
             numerator_processor = numerator_processor)
 
+# Initial variational parameters.
 initial_params = np.loadtxt("input_2D/initial_params.csv", delimiter=",")
 
+# Execute the optimization loop with the chosen method.
 result = optimizer.optimize(
             initial_params = initial_params,
             method = method
@@ -197,9 +219,11 @@ print("Optimization complete.")
 # ================================
 # Get Amplitude
 # ================================
+# Recover optimized wavefunction amplitudes for the 2D grid.
 amplitudes = optimizer.get_amplitudes(optimal_params = result.x)
 
 os.makedirs("output_2D", exist_ok=True)
+# Persist optimizer outputs for downstream analysis or visualization.
 np.savetxt("output_2D/VQA_optimal_parameters.csv", result.x, delimiter=",")
 np.savetxt("output_2D/VQA_optimal_amplitudes.csv", amplitudes, delimiter=",")
 
@@ -212,3 +236,4 @@ print("  - output_2D/VQA_optimal_parameters.csv")
 print("  - output_2D/VQA_optimal_amplitudes.csv")
 
 print("  - output_2D/VQA_result.txt")
+
