@@ -120,7 +120,7 @@ If you use this work, please cite:
   title={Efficient and Scalable Quantum Library Solving Two-Dimensional Poisson Equatiosn with Mixed Boundary Conditions},
   author={Dongyun Chung, Jiyong Choi, Jung-Il Choi},
   journal={To be submitted},
-  year={2025}
+  year={2026}
 }
 ```
 
