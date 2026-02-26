@@ -18,7 +18,7 @@ This implementation is based on the following publications:
 
 > **Xiaoqi Liu, Yuedi Qu, Ming Li, Shu-Qian Shen .** (2025). *A variational quantum algorithm for the Poisson equation based on the banded Toeplitz systems*.
 
-> **Dongyun Chung, Jiyong Choi, Jung-Il Choi .** (2025). *Efficient and Scalable Quantum Library Solving Two-Dimensional Poisson Equations with Mixed Boundary Conditions*.
+> **Dongyun Chung, Jiyong Choi, Jung-Il Choi .** (2026). *VQA_POISSON: A Quantum Library for Solving Two-Dimensional Poisson Equations with Mixed Boundary Conditions*.
 ---
 
 ## Features
